@@ -5,6 +5,7 @@
 #include <iostream>
 #include <mpich/mpi.h>
 #include <sstream>
+#include <assert.h>
 
 using namespace std;
 
@@ -16,6 +17,8 @@ using namespace std;
 #define MFILE_A "mA"
 #define MFILE_B "mB"
 #define MFILE_C "mC"
+
+bool blocking = false;
 
 int compare (const void * a, const void * b)
 {
@@ -122,6 +125,7 @@ int main(int argc, char *argv[])
     MPI_File fileMatrixA;
     MPI_File_open(MPI_COMM_WORLD, MFILE_A, MPI_MODE_RDONLY, MPI_INFO_NULL, &fileMatrixA);
 
+
     int rowsA;
     MPI_File_read_all(fileMatrixA, &rowsA, 1, MPI_INT, MPI_STATUSES_IGNORE);
 
@@ -182,7 +186,14 @@ int main(int argc, char *argv[])
                     sendValue = EMPTY_COLOR;
                 }
                 //send color for process
-                MPI_Send(&sendValue, 1, MPI_INT, i, TAG_COLOR, MPI_COMM_WORLD);
+                if (blocking){
+                    MPI_Send(&sendValue, 1, MPI_INT, i, TAG_COLOR, MPI_COMM_WORLD);
+                }
+                else{
+                    MPI_Request request;
+                    MPI_Isend(&sendValue,1,MPI_INT,i,TAG_COLOR,MPI_COMM_WORLD,&request);
+                }
+
                 colors[iColor] -= 1;
                 sendCouter++;
             }
