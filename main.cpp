@@ -172,6 +172,9 @@ int main(int argc, char *argv[])
 
             int iColor = 0;
             int sendCouter = 0;
+            MPI_Request requests[mpiSize];
+            MPI_Status status[mpiSize];
+            int flags[mpiSize];
             for(int i = 1; i < mpiSize; i++)
             {
                 if(colors[iColor] == 0)
@@ -190,12 +193,23 @@ int main(int argc, char *argv[])
                     MPI_Send(&sendValue, 1, MPI_INT, i, TAG_COLOR, MPI_COMM_WORLD);
                 }
                 else{
-                    MPI_Request request;
-                    MPI_Isend(&sendValue,1,MPI_INT,i,TAG_COLOR,MPI_COMM_WORLD,&request);
+                    MPI_Isend(&sendValue,1,MPI_INT,i,TAG_COLOR,MPI_COMM_WORLD,&requests[i-1]);
                 }
 
                 colors[iColor] -= 1;
                 sendCouter++;
+            }
+            if (mpiRank!=0){
+                while (true) {
+                    for (int i = 1; i < mpiSize; ++i) {
+                        MPI_Test(&requests[i],&flags[i],&status[i]);
+                    }
+                    bool check = true;
+                    for (int i = 1; i < mpiSize; ++i){
+                        if (!flags[i]) check = false;
+                    }
+                    if (check) break;
+                }
             }
 
             delete[] colors;
