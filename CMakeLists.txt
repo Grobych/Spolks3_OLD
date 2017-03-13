@@ -4,16 +4,10 @@ project(l4)
 set(CMAKE_CXX_STANDARD 11)
 
 set(SOURCE_FILES
-        functions.cpp
-        functions.h
         main.cpp
-        matrix.cpp
-        matrix.h
-        mympi.cpp
-        mympi.h)
+        )
 
 add_executable(l4 ${SOURCE_FILES})
-
 
 find_package(MPI REQUIRED)
 include_directories(${MPI_INCLUDE_PATH})

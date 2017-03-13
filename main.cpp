@@ -1,7 +1,3 @@
-
-#include "mympi.h"
-#include "matrix.h"
-
 #include <ctime>
 #include <memory>
 #include <cstring>
@@ -20,6 +16,91 @@ using namespace std;
 #define MFILE_A "mA"
 #define MFILE_B "mB"
 #define MFILE_C "mC"
+
+int compare (const void * a, const void * b)
+{
+    return ( *(int*)a - *(int*)b );
+}
+
+void MPIerror(int error_code, int myrank)
+{
+    if(error_code != MPI_SUCCESS)
+    {
+        char error_string[BUFSIZ];
+        int length_of_error_string;
+
+        MPI_Error_string(error_code, error_string, &length_of_error_string);
+        fprintf(stderr, "%3d: %s\n", myrank, error_string);
+        MPI_Finalize();
+        exit(EXIT_FAILURE);
+    }
+}
+
+void GetColorsForProcesses(int *colors, const int nGroups, const int nProcesses)
+{
+    assert(colors && "colors nullptr\n");
+    srand(time(NULL));
+
+    int iColor;
+    for(int i = 0; i < nProcesses; i++)
+    {
+        iColor = rand() % nGroups;
+        colors[iColor] += 1;
+    }
+    qsort(colors, nGroups, sizeof(int), compare);
+
+    while(colors[0] == 0)
+    {
+        colors[0] = colors[nGroups - 1] / 2;
+        if(colors[nGroups - 1] % 2 == 0)
+        {
+            colors[nGroups - 1] /= 2;
+        }
+        else
+        {
+            colors[nGroups - 1] = (colors[nGroups - 1] / 2) + 1;
+        }
+
+        qsort(colors, nGroups, sizeof(int), compare);
+    }
+}
+
+int* NewMatrix(const int rowNum, const int colNum)
+{
+    int* matrix = (int*)calloc(rowNum * colNum, sizeof(rowNum));
+
+    return matrix;
+}
+
+void PrintMatrix(const int* matrix, const int rowNum, const int colNum)
+{
+    for(int i = 0; i < rowNum; i++)
+    {
+        for(int j = 0; j < colNum; j++)
+        {
+            std::cout << matrix[i * colNum + j] << " ";
+        }
+        std::cout << std::endl;
+    }
+}
+
+void MatrixMultiplication(const int *matrixA, const int *matrixB, int *matrixC, const int rowsA, const int columnsA, const int columnsB)
+{
+    assert(matrixA && "matrixA null pointer\n");
+    assert(matrixB && "matrixB null pointer\n");
+    assert(matrixC && "matrixC null pointer\n");
+
+    for(int i = 0; i < rowsA; i++)
+    {
+        for(int j = 0; j < columnsB; j++)
+        {
+            for(int k = 0; k < columnsA; k++)
+            {
+                matrixC[i * columnsB + j] += matrixA[i * columnsA + k] * matrixB[k * columnsB + j];
+            }
+        }
+    }
+}
 
 int main(int argc, char *argv[])
 {
